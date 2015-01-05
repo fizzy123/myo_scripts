@@ -1,5 +1,6 @@
 scriptId = 'com.nobr.base'
-
+scriptTitle = "Youtube"
+scriptDetailsUrl = ""
 -- Conditional wave
 
 function conditionallySwapWave(pose)
@@ -13,18 +14,8 @@ function conditionallySwapWave(pose)
   return pose
 end
 
--- Unlock mechanism 
-
-function unlock()
-  unlocked = true
-end
-
-function relock()
-	unlocked = false
-end
-
 function extendUnlock()
-  unlockedSince = myo.getTimeMilliseconds()
+  myo.unlock("hold")
 end;
 
 local angle, volume, forward, backward, appName
@@ -33,33 +24,20 @@ function onPoseEdge(pose, edge)
   pose = conditionallySwapWave(pose)
 
 -- Unlock
-  if pose == "thumbToPinky" then
-		if unlocked == false then
-      if edge == "off" then
-        unlock()
-      elseif edge == "on" then
-        myo.vibrate("short")
-        myo.vibrate("short")
-      end
-    elseif unlocked == true then
-      if edge == 'on' then
-        if (string.find(appName, 'YouTube')) then
-          myo.keyboard('f', 'press')
-        end
-      end
-		end
-    extendUnlock()
+  if pose == "doubleTap" then
+    if edge == 'on' then
+      myo.keyboard('f', 'press')
+    end
   end
 
   if pose == "fingersSpread" then
-    if unlocked and edge == 'on' then
+    if edge == 'on' then
       myo.keyboard('space', 'press')
-      extendUnlock()
     end
   end
 
   if pose == "waveIn" then
-    if (unlocked and edge == "on") then
+    if edge == "on" then
       forward = true
     elseif edge == "off" then 
       forward = false
@@ -68,7 +46,7 @@ function onPoseEdge(pose, edge)
   end
 
   if pose == "waveOut" then
-    if (unlocked and edge == "on") then
+    if edge == "on" then
       backward = true
     elseif edge == "off" then 
       backward = false
@@ -77,13 +55,16 @@ function onPoseEdge(pose, edge)
   end
   
   if pose == "fist" then
-    if (unlocked and edge == "on") then 
+    if edge == "on" then 
       volume = true
       angle = myo.getRoll() * 180/3.14
     elseif (unlocked and edge == "off") then
       volume = false
     end
     extendUnlock()
+  end
+  if edge == "off" then 
+    myo.unlock("timed")
   end
 --	if pose == "fingersSpread" then
 --		if unlocked and edge == "on" then
@@ -94,9 +75,6 @@ function onPoseEdge(pose, edge)
 --	end
 end
 
--- Time since last activity before we lock
-UNLOCKED_TIMEOUT = 2200
-
 local KEYPRESS_RATE = 3
 local COUNT = 0
 function onPeriodic()
@@ -104,11 +82,7 @@ function onPeriodic()
   if COUNT > KEYPRESS_RATE then
     COUNT = 0
   end
-
-	if myo.getArm() == "unknown" then
-		relock()
-	end
-
+  
   if COUNT == KEYPRESS_RATE then
     if forward then
       myo.keyboard('left_arrow', 'press')
@@ -128,20 +102,11 @@ function onPeriodic()
       angle = myo.getRoll() * 180 / 3.14
     end
   end
-
-  if unlockedSince then
-    if myo.getTimeMilliseconds() - unlockedSince > UNLOCKED_TIMEOUT then
-      if unlocked then
-        myo.vibrate("short")
-      end
-      unlocked = false
-    end
-  end
 end
 
 function onForegroundWindowChange(app, title)
 	appName = title
-	if app == 'com.google.Chrome' then
+	if app == 'chrome.exe' then
     if string.find(title, 'YouTube') then
       return true
     end
